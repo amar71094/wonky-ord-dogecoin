@@ -80,9 +80,9 @@ fn get_change_address(client: &Client) -> Result<Address> {
 }
 
 pub(crate) fn initialize_wallet(options: &Options, seed: [u8; 64]) -> Result {
-  log::info!("options {} {}",options,seed);
+  log::info!("options {:#?} {:#?}",options,seed);
   let client = options.dogecoin_rpc_client_for_wallet_command(true)?;
-  log::info!("client {}",client);
+  log::info!("client {:#?}",client);
   let network = options.chain().network();
 
   client.create_wallet(&options.wallet, None, Some(true), None, None)?;

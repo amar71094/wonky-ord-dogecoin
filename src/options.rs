@@ -223,9 +223,9 @@ impl Options {
     Ok(client)
 }
 pub(crate) fn dogecoin_rpc_client_for_wallet_command(&self, create: bool) -> Result<Client> {
-  log::info!("test {}", create);
+  log::info!("test {:#?}", create);
     let client = self.dogecoin_rpc_client()?;
-log::info!("test1 {}",client);
+log::info!("test1 {:#?}",client);
     const MIN_VERSION: usize = 1140600;
     let dogecoin_version = client.version()?;
     if dogecoin_version < MIN_VERSION {
