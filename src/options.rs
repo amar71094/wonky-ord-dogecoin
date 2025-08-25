@@ -216,9 +216,10 @@ impl Options {
       other => bail!("Dogecoin RPC server on unknown chain: {other}"),
     };
 
+    log::info!("rpc chain {:#?}",rpc_chain);
     let ord_chain = self.chain();
 
-    log::info!("rpc chain {:#?} | ord_chain {:#?}",rpc_chain,ord_chain);
+    log::info!(" ord_chain {:#?}",ord_chain);
     if rpc_chain != ord_chain {
       bail!("Dogecoin RPC server is on {rpc_chain} but ord is on {ord_chain}");
     }
