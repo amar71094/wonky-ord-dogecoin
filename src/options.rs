@@ -206,6 +206,8 @@ impl Options {
         )
       })?;
 
+      log::info!("client in dogecoin rpc client {:#?}",client);
+
     let rpc_chain = match client.get_blockchain_info()?.chain.as_str() {
       "main" => Chain::Mainnet,
       "test" => Chain::Testnet,
