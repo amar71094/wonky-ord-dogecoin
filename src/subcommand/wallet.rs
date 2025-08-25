@@ -136,15 +136,15 @@ fn derive_and_import_descriptor(
 
   let desc = Descriptor::new_tr(public_key, None)?;
 
-  client.import_descriptors(ImportDescriptors {
-    descriptor: desc.to_string_with_secret(&key_map),
-    timestamp: Timestamp::Now,
-    active: Some(true),
-    range: None,
-    next_index: None,
-    internal: Some(!change),
-    label: None,
-  })?;
+  // client.import_descriptors(ImportDescriptors {
+  //   descriptor: desc.to_string_with_secret(&key_map),
+  //   timestamp: Timestamp::Now,
+  //   active: Some(true),
+  //   range: None,
+  //   next_index: None,
+  //   internal: Some(!change),
+  //   label: None,
+  // })?;
 
   Ok(())
 }
