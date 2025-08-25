@@ -1,4 +1,4 @@
-use {super::*, bitcoincore_rpc::Auth};
+use {super::*, bitcoincore_rpc::{Auth, Client}};
 use serde_json::Value;
 #[derive(Clone, Default, Debug, Parser)]
 #[command(group(
@@ -187,8 +187,7 @@ impl Options {
   }
 
    pub(crate) fn dogecoin_rpc_client(&self) -> Result<Client> {
-    let cookie_file = self
-      .cookie_file()
+    let cookie_file = self.cookie_file()
       .map_err(|err| anyhow!("failed to get cookie file path: {err}"))?;
 
     let rpc_url = self.rpc_url();
@@ -199,18 +198,14 @@ impl Options {
     );
 
     let client = Client::new(&rpc_url, Auth::CookieFile(cookie_file.clone()))
-      .with_context(|| {
-        format!(
-          "failed to connect to Dogecoin Core RPC at {rpc_url} using cookie file {}",
-          cookie_file.display()
-        )
-      })?;
+      .with_context(|| format!(
+        "failed to connect to Dogecoin Core RPC at {rpc_url} using cookie file {}",
+        cookie_file.display()
+      ))?;
 
-    // ---- IMPORTANT: use raw JSON so Dogecoin's schema can't break us ----
+    // RAW getblockchaininfo to avoid Bitcoin-typed structs
     let info: Value = client.call("getblockchaininfo", &[])?;
-    let chain_str = info
-      .get("chain")
-      .and_then(|v| v.as_str())
+    let chain_str = info.get("chain").and_then(|v| v.as_str())
       .ok_or_else(|| anyhow!("getblockchaininfo missing `chain`"))?;
 
     let rpc_chain = match chain_str {
@@ -221,57 +216,34 @@ impl Options {
       other => bail!("Dogecoin RPC server on unknown chain: {other}"),
     };
 
-    let ord_chain = self.chain();
-    if rpc_chain != ord_chain {
-      bail!("Dogecoin RPC server is on {rpc_chain} but ord is on {ord_chain}");
+    if rpc_chain != self.chain() {
+      bail!("Dogecoin RPC server is on {rpc_chain} but ord is on {}", self.chain());
     }
 
     Ok(client)
   }
 
-  pub(crate) fn dogecoin_rpc_client_for_wallet_command(&self, create: bool) -> Result<Client> {
+  pub(crate) fn dogecoin_rpc_client_for_wallet_command(&self, _create: bool) -> Result<Client> {
     let client = self.dogecoin_rpc_client()?;
 
-    // Raw getnetworkinfo to get version (again: avoid typed helper)
+    // RAW getnetworkinfo for version gate
     let net: Value = client.call("getnetworkinfo", &[])?;
-    let dogecoin_version: usize = net
-      .get("version")
-      .and_then(|v| v.as_u64())
-      .ok_or_else(|| anyhow!("getnetworkinfo missing `version`"))? as usize;
+    let doge_ver: usize = net.get("version")
+      .and_then(|v| v.as_u64()).ok_or_else(|| anyhow!("getnetworkinfo missing `version`"))? as usize;
 
     const MIN_VERSION: usize = 1140600;
-    if dogecoin_version < MIN_VERSION {
+    if doge_ver < MIN_VERSION {
       bail!(
         "Dogecoin Core {} or newer required, current version is {}",
         Self::format_dogecoin_core_version(MIN_VERSION),
-        Self::format_dogecoin_core_version(dogecoin_version),
+        Self::format_dogecoin_core_version(doge_ver)
       );
     }
 
-    // Load or create wallet – use raw calls; no descriptors on Dogecoin
-    // listwallets → Vec<String>
-    let wallets: Vec<String> = client.call("listwallets", &[])?;
-    let want = self.wallet.clone();
-
-    if create {
-      if !wallets.iter().any(|w| w == &want) {
-        // createwallet "ord"
-        // Dogecoin 1.14.9 doesn't support descriptor flags; pass only name.
-        let _resp: Value = client.call("createwallet", &[want.clone().into()])?;
-      }
-      // Ensure it's loaded
-      let wallets: Vec<String> = client.call("listwallets", &[])?;
-      if !wallets.iter().any(|w| w == &want) {
-        let _resp: Value = client.call("loadwallet", &[want.clone().into()])?;
-      }
-    } else {
-      if !wallets.iter().any(|w| w == &want) {
-        let _resp: Value = client.call("loadwallet", &[want.clone().into()])?;
-      }
-      // On Dogecoin there is no `listdescriptors`. Skip any descriptor checks.
-      log::warn!("Continuing without descriptor checks (Dogecoin legacy wallet).");
-    }
-
+    // Dogecoin 1.14.x has a single legacy wallet; no list/load/createwallet.
+    // Optionally check wallet presence:
+    let _wallet_info: Value = client.call("getwalletinfo", &[])?;
+    log::warn!("Using legacy Dogecoin wallet; skipping descriptor checks.");
     Ok(client)
   }
 
