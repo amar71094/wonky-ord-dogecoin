@@ -85,30 +85,30 @@ pub(crate) fn initialize_wallet(options: &Options, seed: [u8; 64]) -> Result {
 
   client.create_wallet(&options.wallet, None, Some(true), None, None)?;
 
-  let secp = Secp256k1::new();
+  // let secp = Secp256k1::new();
 
-  let master_private_key = ExtendedPrivKey::new_master(network, &seed)?;
+  // let master_private_key = ExtendedPrivKey::new_master(network, &seed)?;
 
-  let fingerprint = master_private_key.fingerprint(&secp);
+  // let fingerprint = master_private_key.fingerprint(&secp);
 
-  let derivation_path = DerivationPath::master()
-    .child(ChildNumber::Hardened { index: 86 })
-    .child(ChildNumber::Hardened {
-      index: u32::from(network != Network::Bitcoin),
-    })
-    .child(ChildNumber::Hardened { index: 0 });
+  // let derivation_path = DerivationPath::master()
+  //   .child(ChildNumber::Hardened { index: 86 })
+  //   .child(ChildNumber::Hardened {
+  //     index: u32::from(network != Network::Bitcoin),
+  //   })
+  //   .child(ChildNumber::Hardened { index: 0 });
 
-  let derived_private_key = master_private_key.derive_priv(&secp, &derivation_path)?;
+  // let derived_private_key = master_private_key.derive_priv(&secp, &derivation_path)?;
 
-  for change in [false, true] {
-    derive_and_import_descriptor(
-      &client,
-      &secp,
-      (fingerprint, derivation_path.clone()),
-      derived_private_key,
-      change,
-    )?;
-  }
+  // for change in [false, true] {
+  //   derive_and_import_descriptor(
+  //     &client,
+  //     &secp,
+  //     (fingerprint, derivation_path.clone()),
+  //     derived_private_key,
+  //     change,
+  //   )?;
+  // }
 
   Ok(())
 }
